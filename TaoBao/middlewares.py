@@ -1,8 +1,13 @@
-# proxy_pool.py
 import requests
 import random
 from scrapy import signals
 from scrapy.exceptions import NotConfigured
+from scrapy.http import HtmlResponse
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 
 class ProxyPoolMiddleware:
     def __init__(self, proxy_api):
@@ -17,23 +22,18 @@ class ProxyPoolMiddleware:
         return cls(proxy_api)
         
     def _get_proxies(self):
-        # 从代理服务商API获取IP列表
-        response = requests.get(self.proxy_api)
-        return response.json()['proxies']
+         try:
+            # 从代理服务商 API 获取 IP 列表
+            response = requests.get(self.proxy_api)
+            return response.json()['proxies']
+         except Exception as e:
+            print(f"获取代理 IP 失败: {e}")
+            return []
         
     def process_request(self, request, spider):
         # 随机选择代理
         proxy = random.choice(self.proxies)
         request.meta['proxy'] = f'http://{proxy}'
-
-
-# selenium_middleware.py
-from scrapy.http import HtmlResponse
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.by import By
 
 class SeleniumMiddleware:
     def __init__(self):
@@ -42,11 +42,19 @@ class SeleniumMiddleware:
         self.driver = webdriver.Chrome(options=chrome_options)
         
     def process_request(self, request, spider):
-        self.driver.get(request.url)
-        # 等待商品列表加载完成
-        WebDriverWait(self.driver, 10).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '.product-list'))
-        )
-        body = self.driver.page_source
-        return HtmlResponse(self.driver.current_url, body=body, 
-                           encoding='utf-8', request=request)
+        try:
+            self.driver.get(request.url)
+            # 等待商品列表加载完成
+            WebDriverWait(self.driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, '.product-list'))
+            )
+            body = self.driver.page_source
+            return HtmlResponse(self.driver.current_url, body=body, 
+                               encoding='utf-8', request=request)
+        except Exception as e:
+            print(f"使用 Selenium 加载页面失败: {e}")
+            return None
+
+    def __del__(self):
+        if self.driver:
+            self.driver.quit()

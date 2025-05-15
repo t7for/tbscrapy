@@ -29,6 +29,25 @@ USER_AGENT_LIST = [  # 伪造User-Agent池
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36...',
 ]
 
+# 代理 API 配置
+PROXY_API = "your_proxy_api_url"
+
+# MongoDB 配置
+MONGO_URI = "mongodb://localhost:27017"
+MONGO_DATABASE = "ecommerce"
+
+# 启用下载中间件
+DOWNLOADER_MIDDLEWARES = {
+    "TaoBao.middlewares.ProxyPoolMiddleware": 543,
+    "TaoBao.middlewares.SeleniumMiddleware": 544,
+}
+
+# 启用管道
+ITEM_PIPELINES = {
+    "TaoBao.pipelines.MongoDBPipeline": 300,
+}
+
+
 # Configure maximum concurrent requests performed by Scrapy (default: 16)
 #CONCURRENT_REQUESTS = 32
 
